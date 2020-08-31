@@ -1,6 +1,7 @@
 // Self invoked anonymous function
 (function () {
   let peer = null;
+  let conn = null;
 
   const peerOnOpen = (id) => {
     document.querySelector(".my-peer-id").innerHTML = id;
@@ -11,10 +12,16 @@
   };
   const connectToPeerClick = (el) => {
     const peerId = el.target.textContent;
-    const conn = peer.connect(peerId);
+    conn && conn.close();
+    conn = peer.connect(peerId);
     conn.on("open", () => {
       console.log("Connection open");
+      const event = new CustomEvent("peer-changed", {
+        detail: { peerId: peerId },
+      });
+      document.dispatchEvent(event);
     });
+    conn.on("error", consoleLog);
   };
 
   //Connect to peer server
@@ -37,6 +44,7 @@
     .querySelector(".list-all-peers-button")
     .addEventListener("click", () => {
       const peersEl = document.querySelector(".peers");
+      peersEl.firstChild && peersEl.firstChild.remove();
       const ul = document.createElement("ul");
       peer.listAllPeers((peers) => {
         peers
@@ -54,4 +62,16 @@
         peersEl.appendChild(ul);
       });
     });
+  // Peer changed
+  document.addEventListener("peer-changed", (e) => {
+    const peerId = e.detail.peerId;
+    console.log("peerid: ", peerId);
+
+    document.querySelectorAll(".connect-button.connected").forEach((el) => {
+      el.classList.remove("connected");
+    });
+
+    const button = document.querySelector(`.connect-button.peerId-${peerId}`);
+    button.classList.add("connected");
+  });
 })();
