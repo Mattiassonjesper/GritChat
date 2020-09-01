@@ -10,6 +10,25 @@
   const peerOnError = (error) => {
     console.log(error);
   };
+
+  //Handle connection event from remote
+  const peerOnConnection = (dataConnection) => {
+    conn && conn.close();
+    conn = dataConnection;
+    console.log(dataConnection);
+
+    conn.on("data", (data) => {
+      printMessage(data, "them");
+    });
+
+    //Dispatch custom event
+    const event = new CustomEvent("peer-changed", {
+      detail: { peerId: dataConnection.peer },
+    });
+    document.dispatchEvent(event);
+  };
+
+  //Connect to peer
   const connectToPeerClick = (el) => {
     const peerId = el.target.textContent;
     conn && conn.close();
@@ -20,9 +39,24 @@
         detail: { peerId: peerId },
       });
       document.dispatchEvent(event);
+
+      conn.on("data", (data) => {
+        printMessage(data, "them");
+      });
     });
-    conn.on("error", consoleLog);
   };
+
+  //Implement print message function
+  function printMessage(message, writer) {
+    const messagesDiv = document.querySelector(".messages");
+    const messageWrapperDiv = document.createElement("div");
+    const newMessageDiv = document.createElement("div");
+    newMessageDiv.innerText = message;
+    messageWrapperDiv.classList.add("message");
+    messageWrapperDiv.appendChild(newMessageDiv);
+    messagesDiv.appendChild(messageWrapperDiv);
+    messageWrapperDiv.classList.add("me");
+  }
 
   //Connect to peer server
   const myPeerId = location.hash.slice(1);
@@ -32,11 +66,23 @@
     port: 8443,
     path: "/myapp",
     secure: true,
+    config: {
+      iceServers: [
+        { url: ["stun:eu-turn7.xirsys.com"] },
+        {
+          username:
+            "1FOoA8xKVaXLjpEXov-qcWt37kFZol89r0FA_7Uu_bX89psvi8IjK3tmEPAHf8EeAAAAAF9NXWZnbGFqYW4=",
+          credential: "83d7389e-ebc8-11ea-a8ee-0242ac140004",
+          url: "turn:eu-turn7.xirsys.com:80?transport=udp",
+        },
+      ],
+    },
   });
 
   // Handle peer events
   peer.on("open", peerOnOpen);
   peer.on("error", peerOnError);
+  peer.on("connection", peerOnConnection);
 
   //List all peers connected and filter out myPeerId
   //Create button for every peer connected
@@ -62,6 +108,7 @@
         peersEl.appendChild(ul);
       });
     });
+
   // Peer changed
   document.addEventListener("peer-changed", (e) => {
     const peerId = e.detail.peerId;
@@ -72,6 +119,15 @@
     });
 
     const button = document.querySelector(`.connect-button.peerId-${peerId}`);
-    button.classList.add("connected");
+    button && button.classList.add("connected");
+  });
+
+  //Send message
+  let sendButton = document.querySelector(".send-new-message-button");
+  sendButton.addEventListener("click", () => {
+    let message = document.querySelector(".new-message").value;
+    conn.send(message);
+
+    printMessage(message, "me");
   });
 })();
