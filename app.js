@@ -51,11 +51,31 @@
     const messagesDiv = document.querySelector(".messages");
     const messageWrapperDiv = document.createElement("div");
     const newMessageDiv = document.createElement("div");
-    newMessageDiv.innerText = message;
+
+    //Print time when send message
+    var today = new Date();
+    var h = today.getHours();
+    var m = today.getMinutes();
+    var s = today.getSeconds();
+    m = checkTime(m);
+    s = checkTime(s);
+    function checkTime(i) {
+      if (i < 10) {
+        i = "0" + i;
+      }
+      return i;
+    }
+
+    if (writer === "them") {
+      newMessageDiv.innerText = "(" + h + ":" + m + ":" + s + ") " + message;
+    } else {
+      newMessageDiv.innerText = message + " (" + h + ":" + m + ":" + s + ") ";
+    }
     messageWrapperDiv.classList.add("message");
+    messageWrapperDiv.classList.add(writer);
     messageWrapperDiv.appendChild(newMessageDiv);
     messagesDiv.appendChild(messageWrapperDiv);
-    messageWrapperDiv.classList.add("me");
+    messagesDiv.scrollTo(0, messagesDiv.scrollHeight);
   }
 
   //Connect to peer server
@@ -83,6 +103,16 @@
   peer.on("open", peerOnOpen);
   peer.on("error", peerOnError);
   peer.on("connection", peerOnConnection);
+
+  //Display video of me
+  navigator.mediaDevices.getUserMedia({ audio: false, video: true }).then(stream) => {
+    
+  }
+
+  //Handle enter pressed
+  document.querySelector(".new-message").addEventListener("keyup", (event) => {
+    if (event.key === "Enter") sendMessage();
+  });
 
   //List all peers connected and filter out myPeerId
   //Create button for every peer connected
@@ -120,14 +150,25 @@
 
     const button = document.querySelector(`.connect-button.peerId-${peerId}`);
     button && button.classList.add("connected");
+
+    //Update video subtext
+    const video = document.querySelector(".video-container.them");
+    video.querySelector(".name").innerText = peerId;
   });
 
   //Send message
-  let sendButton = document.querySelector(".send-new-message-button");
+  const sendButton = document.querySelector(".send-new-message-button");
   sendButton.addEventListener("click", () => {
-    let message = document.querySelector(".new-message").value;
+    const message = document.querySelector(".new-message").value;
+    conn.send(message);
+
+    //printMessage(message, "me");
+  });
+
+  const sendMessage = () => {
+    const message = document.querySelector(".new-message").value;
     conn.send(message);
 
     printMessage(message, "me");
-  });
+  };
 })();
