@@ -31,6 +31,8 @@
 
   // On peer event : 'call', when they are calling you
   const peerOnCall = (incomingCall) => {
+    // if (confirm(`Answer call from ${incomingCall.peer}?`)) {
+    mediaConn && mediaConn.close();
     //Answer incoming call
     navigator.mediaDevices
       .getUserMedia({ audio: false, video: true })
@@ -39,9 +41,10 @@
         incomingCall.answer(myStream);
         mediaConn.on("stream", mediaConnOnStream);
       });
+    //  }
   };
 
-  //Connect to peer
+  // Connect to peer
   const connectToPeerClick = (el) => {
     const peerId = el.target.textContent;
     conn && conn.close();
@@ -59,13 +62,13 @@
     });
   };
 
-  //Implement print message function
+  // Implement print message function
   function printMessage(message, writer) {
     const messagesDiv = document.querySelector(".messages");
     const messageWrapperDiv = document.createElement("div");
     const newMessageDiv = document.createElement("div");
 
-    //Print time when send message
+    // Print time when send message
     let today = new Date();
     let h = today.getHours();
     let m = today.getMinutes();
@@ -91,7 +94,7 @@
     messagesDiv.scrollTo(0, messagesDiv.scrollHeight);
   }
 
-  //Connect to peer server
+  // Connect to peer server
   const myPeerId = location.hash.slice(1);
   console.log(myPeerId);
   peer = new Peer(myPeerId, {
@@ -118,7 +121,7 @@
   peer.on("connection", peerOnConnection);
   peer.on("call", peerOnCall);
 
-  //Display video of me
+  // Display video of me
   navigator.mediaDevices
     .getUserMedia({ audio: false, video: true })
     .then((stream) => {
@@ -133,7 +136,7 @@
     video.srcObject = theirStream;
   };
 
-  //Start video click handler
+  // Start video click handler
   const startVideoCallClick = () => {
     const video = document.querySelector(".video-container.them");
     const startButton = video.querySelector(".start");
@@ -144,6 +147,7 @@
     navigator.mediaDevices
       .getUserMedia({ audio: false, video: true })
       .then((myStream) => {
+        mediaConn && mediaConn.close();
         mediaConn = peer.call(conn.peer, myStream);
         mediaConn.on("stream", mediaConnOnStream);
       });
@@ -156,6 +160,7 @@
 
   // Stop video click handler
   const stopVideoCallClick = () => {
+    mediaConn && mediaConn.close();
     const video = document.querySelector(".video-container.them");
     const startButton = video.querySelector(".start");
     const stopButton = video.querySelector(".stop");
